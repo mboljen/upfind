@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#
+# Created:       TIMESTAMP
+# Last Modified: TIMESTAMP
+#
+# upfind:
+#   Find files and directories in parent directories
+
+# Help text
+usage() {
+cat << EOF
+Find files and directories in parent directories
+
+Usage: upfind [-h] [starting-point] [expression]
+
+Options:
+    -h     show this help message
+EOF
+}
+
+set -e
+
+# Process options
+while getopts "h" OPTION
+do
+    case "$OPTION"
+    in
+        h) usage; exit 0;;
+    esac
+done
+
+# Assert number of parameters is at least 2
+if [ "$#" -lt 2 ]
+then
+    echo "Illegal number of parameters"
+    exit 1
+fi
+
+# Assert first argument is an existing file or directory
+if [ ! -e "$1" ]
+then
+    echo "Starting point $1 does not exist"
+    exit 1
+fi
+
+# Get readlink
+DIR=$(readlink -f "$1")
+
+# Loop over available parent directories
+while
+    RESULT=$(find "$DIR"/ -maxdepth 1 "${@:2}")
+    #echo "Debugging upfind - search in $DIR gives: $RESULT"
+    [[ -z $RESULT ]] && [[ "$DIR" != "/" ]]
+do
+    DIR=$(dirname "$DIR")
+done
+
+# Return relative file/directory descriptor
+realpath --relative-to="$1" "$RESULT"
